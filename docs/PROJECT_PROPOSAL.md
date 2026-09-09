@@ -45,9 +45,19 @@ An episode ends when no frontier cluster remains that is both above the size thr
 
 Ground-truth reachable free area is extracted once per world by flood-filling a high-resolution grid rendered from the SDF geometry, and unit-tested against hand-measured worlds before any coverage number is trusted.
 
-**Research questions.** RQ1: how do strategies compare on efficiency, and does the ranking depend on environment topology? RQ2: does the cost-utility weight lambda have a robust setting, or is the optimum environment-dependent? RQ3: does exploration speed trade against map quality with SLAM in the loop? RQ4: what is each strategy's decision latency on embedded hardware, and where does information gain become infeasible? RQ5: how much does goal commitment (hysteresis) affect efficiency?
+**Research questions.** 
+RQ1: how do strategies compare on efficiency, and does the ranking depend on environment topology? 
+RQ2: does the cost-utility weight lambda have a robust setting, or is the optimum environment-dependent? 
+RQ3: does exploration speed trade against map quality with SLAM in the loop? 
+RQ4: what is each strategy's decision latency on embedded hardware, and where does information gain become infeasible? 
+RQ5: how much does goal commitment (hysteresis) affect efficiency?
 
-**Success criteria.** (1) One command reproduces any figure from the released code and logs. (2) Coverage-time and coverage-distance curves for at least three strategies across at least three environments, with bootstrap confidence intervals over at least ten seeds each. (3) An evidence-backed answer to RQ1. (4) Jetson latency reported per strategy with an explicit infeasibility point. (5) Failure modes, negative results, and threats to validity documented. None of these require a strategy to win. A null result reported with a power analysis satisfies every criterion.
+**Success criteria.** 
+(1) One command reproduces any figure from the released code and logs. 
+(2) Coverage-time and coverage-distance curves for at least three strategies across at least three environments, with bootstrap confidence intervals over at least ten seeds each. 
+(3) An evidence-backed answer to RQ1. 
+(4) Jetson latency reported per strategy with an explicit infeasibility point. 
+(5) Failure modes, negative results, and threats to validity documented. None of these require a strategy to win. A null result reported with a power analysis satisfies every criterion.
 
 ## 2. Proposed Technical Approach
 

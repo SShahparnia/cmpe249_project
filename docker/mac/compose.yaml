@@ -1,0 +1,19 @@
+# Used by scripts/mac/sim.sh. Paths are relative to this file.
+services:
+  sim:
+    build:
+      context: ../..
+      dockerfile: docker/mac/Dockerfile
+    image: cmpe249-sim:humble
+    container_name: cmpe249-sim
+    init: true
+    shm_size: 2gb
+    ports:
+      - "127.0.0.1:6080:6080"   # browser desktop: http://localhost:6080/vnc.html
+    volumes:
+      - ../..:/workspace/cmpe249_project   # live repo, edit on the Mac
+      - gz-fuel:/root/.ignition/fuel       # Gazebo Fuel model cache, survives `sim.sh down`
+    working_dir: /workspace/cmpe249_project
+
+volumes:
+  gz-fuel:

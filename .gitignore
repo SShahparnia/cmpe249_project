@@ -1,0 +1,21 @@
+# Run outputs (archived outside git, see Module 22)
+logs/
+
+# colcon / ROS 2 build artefacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local assistant/editor tool state: never committed
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.vscode/
+.idea/
+.DS_Store

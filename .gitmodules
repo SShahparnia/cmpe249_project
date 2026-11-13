@@ -1,0 +1,16 @@
+[submodule "methods/m-explore-ros2"]
+	path = methods/m-explore-ros2
+	url = https://github.com/robo-friends/m-explore-ros2.git
+[submodule "methods/frontier_exploration_ros2"]
+	path = methods/frontier_exploration_ros2
+	url = https://github.com/mertgulerx/frontier_exploration_ros2.git
+[submodule "methods/ARiADNE"]
+	path = methods/ARiADNE
+	url = https://github.com/marmotlab/ARiADNE.git
+[submodule "methods/ARiADNE-ROS-Planner"]
+	path = methods/ARiADNE-ROS-Planner
+	url = https://github.com/marmotlab/ARiADNE-ROS-Planner.git
+	branch = humble
+[submodule "methods/roadmap-explorer"]
+	path = methods/roadmap-explorer
+	url = https://github.com/suchetanrs/roadmap-explorer.git

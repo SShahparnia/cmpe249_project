@@ -100,4 +100,5 @@ Never mark a run `invalid` just because the method did badly. That would bias th
 
 | date | change | who |
 |------|--------|-----|
+| 2026-11-23 | Snapshots also store `map_stamp` (header stamp of the `/map` message, extra key; `t_ros` is the snapshot time). | Shervan |
 | 2026-11-23 | Added the coverage-evaluator contracts above (manifest keys, snapshot keys, `gt_reachable.npy` orientation, `summary.json` keys). No CSV columns changed. | Shervan |

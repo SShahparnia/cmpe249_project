@@ -6,7 +6,7 @@
 |------|-------|
 | OS | Ubuntu 22.04 |
 | ROS 2 | Humble |
-| Simulator | Ignition Gazebo **Fortress** (what `ros-humble-turtlebot4-simulator` uses). TODO confirm with `ign gazebo --versions` |
+| Simulator | Ignition Gazebo **Fortress** (what `ros-humble-turtlebot4-simulator` uses). Confirmed: `ign gazebo --versions` = 6.18.0 in the Mac container (2026-11-23) |
 | Robot | TurtleBot 4 (standard), `turtlebot4_ignition_bringup` |
 | SLAM | `slam_toolbox`, online async |
 | Nav | Nav2 (`nav2_bringup` via `turtlebot4_navigation`) |
@@ -32,9 +32,12 @@ Measured with `python3 scripts/measure_rtf.py --seconds 60` while sim + SLAM + N
 
 | Machine (CPU / GPU / RAM) | World | Headless? | RTF | Who / date |
 |---------------------------|-------|-----------|-----|------------|
+| Apple M6 Mac, 16 GB, OrbStack container (12 vCPU, 7.8 GB, no GPU, llvmpipe) | default TB4 (`warehouse`) | GUI on Xvfb | **0.006 to 0.008** (sim + SLAM + Nav2; Gazebo at ~8 cores) | Shervan / 2026-11-23 |
 | TODO | default TB4 (`warehouse`) | | | |
 
 If RTF is well below 1.0, plan the Module 19 batch schedule around wall time = sim time / RTF.
+
+> **Mac result (2026-11-23):** at RTF ~0.007 a 20-minute run would take about 2 days of wall time, so the Mac container as-is cannot run experiments. Likely cause: the TB4's sensors (lidar, OAK-D camera) are rendered in software. Next things to try: server-only (`ign gazebo -s`, no GUI), drop the camera, a CPU lidar. Otherwise the GPU PC is the experiment machine and the Mac is for development only.
 
 ## Jetson link (step 5)
 

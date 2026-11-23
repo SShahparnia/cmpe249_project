@@ -213,7 +213,10 @@ class TestEndToEnd(TmpMapMixin, unittest.TestCase):
         with open(os.path.join(run, "goals.csv"), "w", newline="") as f:
             csv.writer(f).writerow(["t_wall", "t_ros", "cycle_id", "goal_x", "goal_y"])
         with open(os.path.join(run, "nav2_results.csv"), "w", newline="") as f:
-            csv.writer(f).writerow(["t_wall", "t_ros", "goal_id", "status"])
+            w = csv.writer(f)          # goal_id is a hex UUID string, as the recorder writes it
+            w.writerow(["t_wall", "t_ros", "goal_id", "status"])
+            w.writerow([1e9 + 101.0, 101.0, "64c3aacfa6283e77a939501312125c45", 2])
+            w.writerow([1e9 + 104.0, 104.0, "64c3aacfa6283e77a939501312125c45", 4])
         # Snapshots every 5 s: known columns grow 0 -> 30.
         for seq, (t, k) in enumerate([(100.0, 0), (105.0, 10), (110.0, 25), (115.0, 30), (120.0, 30)]):
             known = np.zeros((ROWS, COLS), dtype=bool)

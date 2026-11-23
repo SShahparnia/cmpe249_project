@@ -251,7 +251,8 @@ def oscillation_count(goals_t, goals_xy, result_t, result_status, threshold_m):
 # ------------------------------------------------------------------------ I/O
 
 def read_csv_columns(path: str) -> dict:
-    """CSV -> {column: float array}. Missing file -> {}."""
+    """CSV -> {column: float array}, or a string array for non-numeric columns
+    (e.g. the Nav2 goal_id UUIDs). Missing file -> {}."""
     if not os.path.exists(path):
         return {}
     with open(path, newline="") as f:
@@ -260,8 +261,14 @@ def read_csv_columns(path: str) -> dict:
         with open(path, newline="") as f:
             header = next(csv.reader(f), [])
         return {k: np.array([], dtype=float) for k in header}
-    return {k: np.array([float(r[k]) if r[k] not in ("", None) else np.nan for r in rows])
-            for k in rows[0]}
+    out = {}
+    for k in rows[0]:
+        vals = [r[k] for r in rows]
+        try:
+            out[k] = np.array([float(v) if v not in ("", None) else np.nan for v in vals])
+        except ValueError:
+            out[k] = np.array(vals, dtype=str)
+    return out
 
 
 def load_snapshots(run_dir: str) -> list:

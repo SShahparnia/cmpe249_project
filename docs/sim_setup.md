@@ -32,12 +32,20 @@ Measured with `python3 scripts/measure_rtf.py --seconds 60` while sim + SLAM + N
 
 | Machine (CPU / GPU / RAM) | World | Headless? | RTF | Who / date |
 |---------------------------|-------|-----------|-----|------------|
-| Apple M6 Mac, 16 GB, OrbStack container (12 vCPU, 7.8 GB, no GPU, llvmpipe) | default TB4 (`warehouse`) | GUI on Xvfb | **0.006 to 0.008** (sim + SLAM + Nav2; Gazebo at ~8 cores) | Shervan / 2026-11-23 |
-| TODO | default TB4 (`warehouse`) | | | |
+| Apple M6 Mac, 16 GB, OrbStack container (12 vCPU, 7.8 GB, no GPU, llvmpipe) | default TB4 (`warehouse`), **stock sensors** | GUI on Xvfb | **0.007 typical**, bursts to 0.3; stalls for minutes while driving | Shervan / 2026-11-23 |
+| same | same, stock sensors | server only (`gui:=false`) + RViz | 0.145 idle; stalls once driving | Shervan / 2026-11-23 |
+| same | same, **tuned sensors** (`scripts/sim/tune_sensor_rates.sh`) | server only + RViz, Gazebo GUI attached | **0.92 to 1.0** while driving under Nav2 | Shervan / 2026-11-23 |
+| TODO (GPU PC) | default TB4 (`warehouse`) | | | |
 
 If RTF is well below 1.0, plan the Module 19 batch schedule around wall time = sim time / RTF.
 
-> **Mac result (2026-11-23):** at RTF ~0.007 a 20-minute run would take about 2 days of wall time, so the Mac container as-is cannot run experiments. Likely cause: the TB4's sensors (lidar, OAK-D camera) are rendered in software. Next things to try: server-only (`ign gazebo -s`, no GUI), drop the camera, a CPU lidar. Otherwise the GPU PC is the experiment machine and the Mac is for development only.
+### Mac findings (2026-11-23)
+
+- **Cause of the slowness:** Gazebo renders the TB4's sensors in software (Mesa llvmpipe). Stock Humble TB4 has the rplidar, 4 cliff and 7 IR-intensity sensors at 62 Hz plus the OAK-D RGB-D camera at 30 Hz. The camera is the worst: with software OpenGL a single camera render could block the Gazebo server for minutes (one llvmpipe thread busy, every other thread waiting), which froze `/clock`.
+- **Fix used:** `sudo bash scripts/sim/tune_sensor_rates.sh` (in the container, before launching): lidar 10 Hz (real RPLIDAR A1 is ~5.5 to 10 Hz), cliff and IR 5 Hz, camera removed (SLAM and Nav2 do not use it). `revert` restores the stock files. It edits the installed xacros in the container, so it is lost on `scripts/mac/sim.sh down`; rerun it after `up`.
+- **Launch:** `ros2 launch harness/launch/tb4_sim.launch.py gui:=false slam:=true nav2:=true rviz:=true` runs Gazebo without its GUI. To watch in 3D, attach a GUI client to the running server (`ign gazebo -g`, with the TB4 `IGN_GUI_PLUGIN_PATH`); it is a separate process and did not slow the server.
+- **Result:** two Nav2 waypoint tours (`scripts/drive_waypoints.py`), 6/6 and 8/8 goals reached, 24.4 m in 137 s wall for the first, x from -12 to 12 m across the warehouse for the second, RTF ~0.95 throughout.
+- **TEAM DECISION NEEDED:** sensor rates change SLAM input. If we adopt the tuned rates, every sim machine (Mac and GPU PC) must use the same values, they go into `docs/common_rules.md` (Module 15) and every manifest, and they are frozen at `prereg-v1`. If we do, the Mac may be usable for experiments, not only development.
 
 ## Jetson link (step 5)
 

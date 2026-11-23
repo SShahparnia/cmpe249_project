@@ -1,0 +1,40 @@
+# Method `ariadne`: ARiADNE-ROS-Planner (rl_planner) + harness/ariadne_adapter.
+# Submodule: methods/ARiADNE-ROS-Planner @ c41b4c9 (humble branch, ROS 2).
+# Launch: ros2 launch ariadne_adapter ariadne.launch.py params_file:=configs/methods/ariadne.yaml
+#
+# DRAFT. Nothing here has been run yet. Every VERIFY needs a check on the real stack, and the
+# resolution choice needs a team decision (docs/baseline_provenance.md, ARiADNE section).
+
+ariadne_adapter:
+  ros__parameters:
+    global_frame: map
+    robot_base_frame: base_link            # VERIFY: TB4 TF tree (base_link vs base_footprint)
+    pose_rate_hz: 10.0
+    map_topic: /map
+    projected_map_topic: /projected_map
+    # 0.4 m = the grid ARiADNE was trained on and the authors' octomap resolution.
+    # Set to 0.0 to feed slam_toolbox's map unchanged. TEAM DECISION, record it in the provenance doc.
+    projected_map_resolution: 0.4
+    occupied_threshold: 65                 # same as the coverage evaluator's OCC_MIN
+    state_estimation_topic: /state_estimation
+    waypoint_topic: /way_point
+    navigate_to_pose_action: navigate_to_pose
+
+rl_planner:
+  ros__parameters:
+    # Authors' ROS launch values unless noted. Training values (methods/ARiADNE/parameter.py):
+    # CELL_SIZE 0.4, NODE_RESOLUTION 4.0, SENSOR_RANGE 16, UTILITY_RANGE 0.8 * SENSOR_RANGE, MIN_UTILITY 2.
+    map_resolution: 0.4                    # must equal projected_map_resolution (or /map resolution if 0.0)
+    node_resolution: 2.0
+    sensor_range: 12.0                     # authors use 20.0; VERIFY TB4 lidar max range (RPLIDAR A1 ~12 m)
+    utility_range_factor: 0.5
+    min_utility: 3
+    frontier_downsample_factor: 1
+    waypoint_threshold: 2.0
+    next_waypoint_threshold: 4.0
+    hard_update_threshold: 10.0
+    frontier_cluster_range: 10.0
+    enable_save_mode: false
+    enable_dstarlite: false
+    publish_graph: false                   # authors: true; off to save CPU (RViz only)
+    replanning_frequency: 1.0              # authors: 2.5; = 1 / replan_period_s (Module 15, set from the pilot)

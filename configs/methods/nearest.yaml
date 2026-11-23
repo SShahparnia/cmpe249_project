@@ -1,0 +1,25 @@
+# Method `nearest`: m-explore-ros2 (explore_lite) configured as nearest-frontier.
+# Submodule: methods/m-explore-ros2 @ 326cf8a. Node: explore_lite/explore.
+#
+# Cost per frontier (explore/src/frontier_search.cpp:192-197):
+#   cost = potential_scale * min_distance * res - gain_scale * size * res
+# The lowest cost wins. With gain_scale = 0 the frontier whose CLOSEST cell is nearest (straight-line,
+# from the robot's map cell) wins. The goal sent to Nav2 is that frontier's CENTROID
+# (explore.cpp makePlan, target_position = frontier->centroid). Details: docs/baseline_provenance.md.
+#
+# DRAFT. Not run yet.
+
+explore_node:
+  ros__parameters:
+    robot_base_frame: base_link       # VERIFY: TB4 TF tree
+    costmap_topic: map                # slam_toolbox /map
+    costmap_updates_topic: map_updates
+    visualize: false
+    planner_frequency: 1.0            # = 1 / replan_period_s (Module 15). Wall-clock timer, see provenance doc.
+    progress_timeout: 30.0            # package default; blacklists a goal with no progress for 30 s
+    potential_scale: 3.0              # package config value; only the ordering matters once gain_scale = 0
+    orientation_scale: 0.0            # declared but never used by the code
+    gain_scale: 0.0                   # <- the change that makes it nearest-frontier (package config: 1.0)
+    transform_tolerance: 0.3
+    min_frontier_size: 0.3            # = configs/common.yaml min_frontier_size_m (package config: 0.75)
+    return_to_init: false             # package config: true; off so a run ends at frontier exhaustion

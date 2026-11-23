@@ -1,0 +1,5 @@
+# Docker build context = repo root (docker/mac/compose.yaml). Send only what the
+# image needs; the full repo is bind-mounted at runtime instead.
+*
+!scripts/laptop/setup_laptop.sh
+!docker/mac/entrypoint.sh

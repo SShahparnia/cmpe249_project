@@ -1,0 +1,23 @@
+# Method `mrtsp`: frontier_exploration_ros2 in MRTSP mode.
+# Submodule: methods/frontier_exploration_ros2 @ 11864e4 (v1.6.2-5). Node: frontier_explorer.
+# Only values that differ from the package's config/params.yaml are listed here; load this file
+# AFTER the package params file. Paper-to-code mapping: docs/mrtsp_mapping.md.
+#
+# DRAFT. Not run yet.
+
+frontier_explorer:
+  ros__parameters:
+    robot_base_frame: base_link       # package: base_footprint. VERIFY: TB4 TF tree
+    return_to_start_on_complete: false
+
+    # Solver. The package default is "dp" (bounded-horizon DP, the author's own extension, not in
+    # Liu et al. 2025). "greedy" is the plain MRTSP matrix traversal, and the published benchmark
+    # numbers we compare against are greedy. TEAM DECISION: keep greedy unless we decide otherwise.
+    mrtsp_solver: greedy
+
+    # Refresh rate, = 1 / replan_period_s (Module 15).
+    map_processing_rate_hz: 1.0
+
+    # Frontier size filter in cells. 0.3 m / 0.05 m = 6 cells (configs/common.yaml min_frontier_size_m).
+    # VERIFY map resolution. Package default: 5.
+    min_frontier_size_cells: 6

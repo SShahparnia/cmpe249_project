@@ -1,0 +1,172 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index a300b1d..a25b800 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,7 @@ find_package(std_msgs REQUIRED)
+ find_package(tf2 REQUIRED)
+ find_package(tf2_ros REQUIRED)
+ find_package(visualization_msgs REQUIRED)
++find_package(exploration_msgs REQUIRED)
+ 
+ rosidl_generate_interfaces(${PROJECT_NAME}
+   "srv/ControlExploration.srv"
+@@ -66,6 +67,7 @@ target_link_libraries(${PROJECT_NAME}_node
+   ${cpp_typesupport_target}
+ )
+ ament_target_dependencies(${PROJECT_NAME}_node
++  exploration_msgs
+   action_msgs
+   geometry_msgs
+   nav2_msgs
+diff --git a/include/frontier_exploration_ros2/frontier_explorer_core.hpp b/include/frontier_exploration_ros2/frontier_explorer_core.hpp
+index 1db58e8..c947f33 100644
+--- a/include/frontier_exploration_ros2/frontier_explorer_core.hpp
++++ b/include/frontier_exploration_ros2/frontier_explorer_core.hpp
+@@ -125,9 +125,24 @@ struct FrontierExplorerCoreParams
+   int frontier_suppression_max_regions{64};
+ };
+ 
++// ExploreBench timing (Module 9): one planning cycle, plain types so the core stays ROS-message free.
++struct PlanningCycleSample
++{
++  uint64_t cycle_id{0};
++  int64_t ros_start_ns{0};
++  int64_t ros_end_ns{0};
++  double wall_start{0.0};
++  double wall_end{0.0};
++  uint32_t n_frontiers{0};
++  double goal_x{0.0};
++  double goal_y{0.0};
++};
++
+ // Host callbacks injected by the node wrapper (time, TF pose, action transport, logging).
+ struct FrontierExplorerCoreCallbacks
+ {
++  // ExploreBench timing (Module 9): optional, unset means no timing output.
++  std::function<void(const PlanningCycleSample &)> publish_planning_cycle;
+   std::function<int64_t()> now_ns;
+   std::function<std::optional<geometry_msgs::msg::Pose>()> get_current_pose;
+   std::function<bool(double timeout_sec)> wait_for_action_server;
+@@ -400,6 +415,7 @@ public:
+   std::optional<MrtspOrderCacheEntry> mrtsp_order_cache;
+   int mrtsp_order_cache_hits{0};
+   int mrtsp_order_cache_misses{0};
++  uint64_t planning_cycle_id{0};  // ExploreBench timing (Module 9)
+ 
+   // Active action/goal lifecycle state.
+   std::shared_ptr<GoalHandleInterface> goal_handle;
+diff --git a/include/frontier_exploration_ros2/frontier_explorer_node.hpp b/include/frontier_exploration_ros2/frontier_explorer_node.hpp
+index 52f879b..8dd1b16 100644
+--- a/include/frontier_exploration_ros2/frontier_explorer_node.hpp
++++ b/include/frontier_exploration_ros2/frontier_explorer_node.hpp
+@@ -32,6 +32,7 @@ limitations under the License.
+ #include <tf2_ros/buffer.h>
+ #include <tf2_ros/transform_listener.h>
+ #include <visualization_msgs/msg/marker_array.hpp>
++#include <exploration_msgs/msg/planning_cycle.hpp>
+ 
+ #include "frontier_exploration_ros2/srv/control_exploration.hpp"
+ #include "frontier_exploration_ros2/qos_utils.hpp"
+@@ -141,6 +142,8 @@ private:
+   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr frontier_marker_pub_;
+   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr selected_frontier_pub_;
+   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr optimized_map_pub_;
++  // ExploreBench timing (Module 9)
++  rclcpp::Publisher<exploration_msgs::msg::PlanningCycle>::SharedPtr planning_cycle_pub_;
+ 
+   // Subscriptions and timers.
+   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+diff --git a/package.xml b/package.xml
+index 4ab417f..327aab6 100644
+--- a/package.xml
++++ b/package.xml
+@@ -11,6 +11,7 @@
+   <buildtool_depend>rosidl_default_generators</buildtool_depend>
+ 
+   <depend>action_msgs</depend>
++  <depend>exploration_msgs</depend>
+   <depend>geometry_msgs</depend>
+   <depend>nav2_msgs</depend>
+   <depend>nav_msgs</depend>
+diff --git a/src/frontier_explorer_core_dispatch.cpp b/src/frontier_explorer_core_dispatch.cpp
+index ed1282b..6d4638f 100644
+--- a/src/frontier_explorer_core_dispatch.cpp
++++ b/src/frontier_explorer_core_dispatch.cpp
+@@ -21,6 +21,7 @@ limitations under the License.
+ #include <action_msgs/msg/goal_status.hpp>
+ 
+ #include <algorithm>
++#include <chrono>
+ #include <cmath>
+ #include <iomanip>
+ #include <sstream>
+@@ -71,6 +72,11 @@ void FrontierExplorerCore::try_send_next_goal()
+     return;
+   }
+ 
++  // ExploreBench timing (Module 9): cycle starts right before frontier extraction.
++  const int64_t cycle_ros_start_ns = callbacks.now_ns();
++  const double cycle_wall_start = std::chrono::duration<double>(
++    std::chrono::system_clock::now().time_since_epoch()).count();
++
+   FrontierSnapshot snapshot;
+   const double min_goal_distance = frontier_snapshot_min_goal_distance_for_pose(*current_pose);
+   try {
+@@ -170,6 +176,22 @@ void FrontierExplorerCore::try_send_next_goal()
+     return;
+   }
+ 
++  // ExploreBench timing (Module 9): goal chosen; cycle ends before it is sent to Nav2.
++  if (callbacks.publish_planning_cycle) {
++    PlanningCycleSample sample;
++    sample.wall_end = std::chrono::duration<double>(
++      std::chrono::system_clock::now().time_since_epoch()).count();
++    sample.ros_end_ns = callbacks.now_ns();
++    sample.cycle_id = planning_cycle_id++;
++    sample.ros_start_ns = cycle_ros_start_ns;
++    sample.wall_start = cycle_wall_start;
++    sample.n_frontiers = static_cast<uint32_t>(filtered_frontiers.size());
++    const auto goal_xy = frontier_position(frontier_sequence.front());
++    sample.goal_x = goal_xy.first;
++    sample.goal_y = goal_xy.second;
++    callbacks.publish_planning_cycle(sample);
++  }
++
+   send_frontier_goal(
+     frontier_sequence,
+     *current_pose,
+diff --git a/src/frontier_explorer_node.cpp b/src/frontier_explorer_node.cpp
+index 06b9965..9dcc799 100644
+--- a/src/frontier_explorer_node.cpp
++++ b/src/frontier_explorer_node.cpp
+@@ -286,6 +286,10 @@ FrontierExplorerNode::FrontierExplorerNode(const rclcpp::NodeOptions & options)
+   optimized_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+     params_.optimized_map_topic,
+     10);
++  // ExploreBench timing (Module 9)
++  planning_cycle_pub_ = this->create_publisher<exploration_msgs::msg::PlanningCycle>(
++    "/exploration/planning_cycle",
++    rclcpp::QoS(100).reliable());
+   if (control_service_enabled_) {
+     control_service_ = this->create_service<srv::ControlExploration>(
+       "control_exploration",
+@@ -327,6 +331,19 @@ FrontierExplorerNode::FrontierExplorerNode(const rclcpp::NodeOptions & options)
+   callbacks.on_exploration_complete = [this]() {
+       this->publishCompletionEvent();
+     };
++  // ExploreBench timing (Module 9)
++  callbacks.publish_planning_cycle = [this](const PlanningCycleSample & sample) {
++      exploration_msgs::msg::PlanningCycle msg;
++      msg.cycle_id = sample.cycle_id;
++      msg.stamp_start = rclcpp::Time(sample.ros_start_ns, this->get_clock()->get_clock_type());
++      msg.stamp_end = rclcpp::Time(sample.ros_end_ns, this->get_clock()->get_clock_type());
++      msg.wall_start = sample.wall_start;
++      msg.wall_end = sample.wall_end;
++      msg.n_frontiers = sample.n_frontiers;
++      msg.goal.x = sample.goal_x;
++      msg.goal.y = sample.goal_y;
++      planning_cycle_pub_->publish(msg);
++    };
+   callbacks.debug_outputs_enabled = [this]() {
+       return this->debugOutputsEnabled();
+     };

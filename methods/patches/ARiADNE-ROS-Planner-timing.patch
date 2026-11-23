@@ -1,0 +1,66 @@
+diff --git a/src/rl_planner/package.xml b/src/rl_planner/package.xml
+index ba48696..bf88d80 100644
+--- a/src/rl_planner/package.xml
++++ b/src/rl_planner/package.xml
+@@ -17,6 +17,7 @@
+   <test_depend>python3-pytest</test_depend>
+ 
+   <depend>sensor_msgs_py</depend>
++  <depend>exploration_msgs</depend>
+ 
+   <export>
+     <build_type>ament_python</build_type>
+diff --git a/src/rl_planner/rl_planner/rl_planner.py b/src/rl_planner/rl_planner/rl_planner.py
+index 59807b4..3823ff4 100644
+--- a/src/rl_planner/rl_planner/rl_planner.py
++++ b/src/rl_planner/rl_planner/rl_planner.py
+@@ -23,6 +23,7 @@ from .node_manager import NodeManager
+ from .utils import *
+ from . import parameter
+ from rclpy.qos import QoSProfile, ReliabilityPolicy
++from exploration_msgs.msg import PlanningCycle  # ExploreBench timing (Module 9)
+ 
+ 
+ class Runner(Node):
+@@ -123,6 +124,9 @@ class Runner(Node):
+         self.edge_pub = self.create_publisher(Marker, '/edge', 10)
+         self.node_pub = self.create_publisher(PointCloud2, '/node', 10)
+         self.frontier_pub = self.create_publisher(PointCloud2, '/frontier', 10)
++        # ExploreBench timing (Module 9): timing only, no planning logic.
++        self.planning_cycle_pub = self.create_publisher(PlanningCycle, '/exploration/planning_cycle', 100)
++        self.planning_cycle_id = 0
+         
+         self.init_agent()
+         
+@@ -185,6 +189,10 @@ class Runner(Node):
+         self.next_waypoint_list = []
+         self.get_logger().debug(f"Robot location at {self.robot_location}")
+ 
++        # ExploreBench timing (Module 9): cycle starts right before the graph/frontier update.
++        cycle_ros_start = self.get_clock().now().to_msg()
++        cycle_wall_start = time.time()
++
+         self.robot.node_manager.check_valid_node(self.robot_location, self.map_info)
+ 
+         robot_node_location = self.robot_location
+@@ -242,6 +250,20 @@ class Runner(Node):
+                 self.get_logger().warning("Switch to save mode")
+ 
+         self.next_waypoint = self.next_waypoint_list.pop(0)
++
++        # ExploreBench timing (Module 9): waypoint chosen; cycle ends before it is published.
++        cycle = PlanningCycle()
++        cycle.wall_end = time.time()
++        cycle.stamp_end = self.get_clock().now().to_msg()
++        cycle.cycle_id = self.planning_cycle_id
++        self.planning_cycle_id += 1
++        cycle.stamp_start = cycle_ros_start
++        cycle.wall_start = cycle_wall_start
++        cycle.n_frontiers = len(self.robot.frontier)
++        cycle.goal.x = float(self.next_waypoint[0])
++        cycle.goal.y = float(self.next_waypoint[1])
++        self.planning_cycle_pub.publish(cycle)
++
+         waypoint_msg = self.waypoint_wrapper(self.next_waypoint)
+ 
+         run_time = Float32()

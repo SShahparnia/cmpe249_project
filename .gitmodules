@@ -14,3 +14,11 @@
 [submodule "methods/roadmap-explorer"]
 	path = methods/roadmap-explorer
 	url = https://github.com/suchetanrs/roadmap-explorer.git
+[submodule "maps/m1_house/aws_world"]
+	path = maps/m1_house/aws_world
+	url = https://github.com/aws-robotics/aws-robomaker-small-house-world.git
+	branch = ros2
+[submodule "maps/m3_warehouse/aws_world"]
+	path = maps/m3_warehouse/aws_world
+	url = https://github.com/aws-robotics/aws-robomaker-small-warehouse-world.git
+	branch = ros2

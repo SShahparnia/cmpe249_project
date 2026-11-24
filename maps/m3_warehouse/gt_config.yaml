@@ -1,0 +1,11 @@
+# Inputs to maps/tools/world_to_gt.py (parameters explained in maps/README.md).
+world: m3_warehouse.sdf
+model_paths: [aws_world/models, aws_world]   # model:// and file://models/... (resource path, as in Gazebo)
+resolution: 0.05
+lidar_height: 0.19
+body_heights: [0.05, 0.12, 0.19, 0.26, 0.33]
+seal_radius: 0.10
+seed: [0.0, 0.0]          # open floor near the world origin
+margin: 1.0
+exclude: []
+lidar_geometry: visual

@@ -1,0 +1,43 @@
+generated: 2026-11-23 22:13
+world: m3_warehouse.sdf
+world_sha256: 65f7eddefc0d43b361644a1a2b43758828e8251e08d28b311241ef6f8b9c14c5
+tool_sha256: ba0c88894388a70cc759271b7f8f2e71abbc95e7a3d011297ec27ed1b48d1481
+params:
+  resolution: 0.05
+  lidar_height: 0.19
+  body_heights:
+  - 0.05
+  - 0.12
+  - 0.19
+  - 0.26
+  - 0.33
+  seal_radius: 0.1
+  seed:
+  - 0.0
+  - 0.0
+  margin: 1.0
+  exclude: []
+  lidar_geometry: visual
+grid:
+  rows: 460
+  cols: 320
+  origin:
+  - -8.0
+  - -11.5
+  - 0.0
+  size_m:
+  - 16.0
+  - 23.0
+cells:
+  free: 128230
+  occupied: 18970
+  reachable_free: 94214
+  reference: 96643
+  reference_obstacle: 2429
+areas_m2:
+  reachable_free: 235.54
+  reference: 241.61
+n_shapes:
+  collision: 25
+  visual: 165
+warnings: []

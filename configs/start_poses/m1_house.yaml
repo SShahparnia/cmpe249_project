@@ -2,8 +2,8 @@
 # pilot 0-2, Block Q 0-9 (or 0-14), Block E 0-4. Regenerate: harness/scripts/gen_start_poses.py --map m1_house --n 20 --seed 249
 map: m1_house
 seed: 249
-generator_commit: 1dc4a1eb2b42faa20ae57ef10a7ca7c70bca5d91-dirty
-generator: {script: harness/scripts/gen_start_poses.py, script_sha256: 94790198e42e375b980653a820b1d1e7792dbe0920b0ec372c713b4280bf8b60,
+generator_commit: a6ef1deefab7c45b494f2a22167f5d27094cedaa
+generator: {script: harness/scripts/gen_start_poses.py, script_sha256: c6ecd4d1e753a645044aa7b93114a5cfa946e8ea36eca1c524e26388bf55ab2f,
   clearance_m: 0.35, min_sep_m: 1.5, safe_cells: 40275, draws: 36}
 frame: world (Gazebo); the SLAM map frame starts here
 poses:

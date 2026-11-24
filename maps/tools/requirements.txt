@@ -1,0 +1,9 @@
+# maps/tools (offline, Module 10). Ubuntu 22.04: python3-numpy python3-scipy python3-yaml
+# python3-matplotlib from apt, then:  python3 -m pip install --user trimesh==4.0.10 pycollada
+# (newer trimesh releases need a newer numpy than 22.04's 1.21; on other systems any trimesh 4.x works)
+numpy
+scipy
+pyyaml
+matplotlib
+trimesh
+pycollada   # COLLADA (.dae) meshes, used by the AWS worlds

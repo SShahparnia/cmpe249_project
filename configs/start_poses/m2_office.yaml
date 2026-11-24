@@ -1,0 +1,29 @@
+# Start poses for m2_office (Module 11). Frozen after prereg-v1. Blocks use the first N:
+# pilot 0-2, Block Q 0-9 (or 0-14), Block E 0-4. Regenerate: harness/scripts/gen_start_poses.py --map m2_office --n 20 --seed 249
+map: m2_office
+seed: 249
+generator_commit: 1dc4a1eb2b42faa20ae57ef10a7ca7c70bca5d91-dirty
+generator: {script: harness/scripts/gen_start_poses.py, script_sha256: 94790198e42e375b980653a820b1d1e7792dbe0920b0ec372c713b4280bf8b60,
+  clearance_m: 0.35, min_sep_m: 1.5, safe_cells: 18314, draws: 64}
+frame: world (Gazebo); the SLAM map frame starts here
+poses:
+- {x: 3.3992, y: 1.6968, yaw: -2.8914}
+- {x: 2.8932, y: 3.6955, yaw: -3.0545}
+- {x: -0.8411, y: 0.0394, yaw: 0.3506}
+- {x: -1.7776, y: -1.6392, yaw: 0.029}
+- {x: 1.6299, y: -3.0138, yaw: 1.4798}
+- {x: -0.9958, y: 2.2181, yaw: 1.8843}
+- {x: 2.8799, y: -1.8656, yaw: -0.1367}
+- {x: 1.8079, y: 0.0392, yaw: -0.2123}
+- {x: -0.6548, y: -2.783, yaw: 0.7118}
+- {x: 5.3644, y: 0.1512, yaw: 2.0624}
+- {x: -0.6565, y: 4.4842, yaw: -1.8675}
+- {x: 0.4254, y: 1.6426, yaw: 1.2546}
+- {x: -3.9306, y: 0.0527, yaw: -2.3866}
+- {x: -3.9477, y: -1.8726, yaw: 1.4787}
+- {x: -5.483, y: 1.6876, yaw: 1.0422}
+- {x: 5.3983, y: -3.8617, yaw: -2.8658}
+- {x: -3.8956, y: 2.1559, yaw: -0.3937}
+- {x: 5.0308, y: 3.5626, yaw: 0.0189}
+- {x: 0.956, y: -1.6379, yaw: -1.2677}
+- {x: -3.4997, y: 4.2643, yaw: -0.3745}

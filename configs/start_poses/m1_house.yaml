@@ -1,0 +1,29 @@
+# Start poses for m1_house (Module 11). Frozen after prereg-v1. Blocks use the first N:
+# pilot 0-2, Block Q 0-9 (or 0-14), Block E 0-4. Regenerate: harness/scripts/gen_start_poses.py --map m1_house --n 20 --seed 249
+map: m1_house
+seed: 249
+generator_commit: 1dc4a1eb2b42faa20ae57ef10a7ca7c70bca5d91-dirty
+generator: {script: harness/scripts/gen_start_poses.py, script_sha256: 94790198e42e375b980653a820b1d1e7792dbe0920b0ec372c713b4280bf8b60,
+  clearance_m: 0.35, min_sep_m: 1.5, safe_cells: 40275, draws: 36}
+frame: world (Gazebo); the SLAM map frame starts here
+poses:
+- {x: 5.3492, y: 0.5968, yaw: -2.8914}
+- {x: -0.3568, y: 3.5955, yaw: -3.0545}
+- {x: 1.2589, y: -0.6606, yaw: 0.3506}
+- {x: 6.6224, y: -2.3392, yaw: 0.029}
+- {x: 7.9722, y: 1.9691, yaw: -0.9927}
+- {x: -5.9809, y: -2.0928, yaw: -2.1486}
+- {x: -1.0458, y: 1.3681, yaw: 1.8843}
+- {x: -8.6201, y: -2.5656, yaw: -0.1367}
+- {x: -6.8937, y: 0.6205, yaw: -0.9344}
+- {x: -8.5921, y: -0.6108, yaw: -0.2123}
+- {x: -1.4856, y: -0.3988, yaw: 2.0624}
+- {x: 1.6468, y: 1.0201, yaw: -2.7202}
+- {x: -3.6758, y: 0.4634, yaw: -2.0746}
+- {x: 5.1621, y: -1.6423, yaw: -1.7334}
+- {x: -5.1746, y: 0.5426, yaw: 1.2546}
+- {x: -3.2707, y: -4.0861, yaw: 0.6053}
+- {x: -1.9054, y: -3.2825, yaw: -1.621}
+- {x: 3.0969, y: -3.6633, yaw: -1.2798}
+- {x: 3.2903, y: -1.8324, yaw: 1.599}
+- {x: 5.9483, y: -4.4617, yaw: -2.8658}

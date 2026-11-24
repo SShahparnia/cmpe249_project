@@ -70,7 +70,35 @@ Every run ends with exactly one `outcome` in the manifest. Keep these distinct, 
 
 Never mark a run `invalid` just because the method did badly. That would bias the results toward the method that fails most.
 
+## Contracts used by the coverage evaluator (Module 13)
+
+`analysis/coverage.py` reads these. Modules 10, 12 and 16 must produce them exactly like this.
+
+**`manifest.yaml` keys** (orchestrator, Module 16):
+
+| Key | Type | Meaning |
+|-----|------|---------|
+| `map` | string | map name from 0.1; GT is read from `maps/<map>/` |
+| `pose_index` | int | index into `configs/start_poses/<map>.yaml` |
+| `start_pose` | `{x, y, yaw}` | spawn pose in the **world** frame (m, rad). The SLAM `map` frame starts here. |
+| `t_ros_start` | float, optional | ROS time when the planner started. Time and distance zero for `t_95`, `d_95`. If missing, the first pose / snapshot is used. |
+| `outcome` | string | one of 0.5 |
+
+**Map snapshots** `maps/map_<seq>.npz` (recorder, Module 12): `data` (int8, `width*height`, row-major, row 0 = grid origin, as in `nav_msgs/OccupancyGrid`), `resolution`, `origin_x`, `origin_y`, `origin_yaw`, `width`, `height`, `t_ros`, `t_wall`.
+
+**Ground truth** `maps/<map>/` (Module 10): `gt.pgm` + `gt.yaml` in map_server format (image row 0 = top), and `gt_reachable.npy`, a bool array with the **same shape and row order as `gt.pgm`** (row 0 = top). The evaluator adds the obstacle cells that border reachable free space itself, so `gt_reachable.npy` only needs the reachable free cells.
+
+**Known cells:** SLAM value `0` = free, `>= 65` = occupied, `-1` and `1..64` = unknown (`FREE_MAX` / `OCC_MIN` in `coverage.py`, overridable with `--free-max` / `--occ-min`). **VERIFY** against our `slam_toolbox` config.
+
+**`summary.json` keys written:** `t_95`, `d_95` (seconds / metres from `t_ros_start`, `null` if 95% is never reached), `final_coverage`, `total_distance_m`, `total_time_s`, `outcome`, `oscillation_count`, `oscillation_threshold_m`, `coverage_target`, `n_reference_cells`, `n_snapshots`, `t_ros_zero`, `known_thresholds`, `coverage_warnings`. Other keys already in the file are kept.
+
+**Path length:** a pose counts towards distance only once it is at least 1 cm from the last counted pose, so jitter is ignored but slow motion still adds up.
+
+**Oscillation:** a goal switch counts when the new goal is more than X m from the current goal and Nav2 reported no SUCCEEDED (4) or ABORTED (6) since the current goal was first set. Re-sending a goal within X m does not count. X defaults to 1.0 m (`--osc-threshold`) until the pilot fixes it.
+
 ## Changelog
 
 | date | change | who |
 |------|--------|-----|
+| 2026-11-23 | Snapshots also store `map_stamp` (header stamp of the `/map` message, extra key; `t_ros` is the snapshot time). | Shervan |
+| 2026-11-23 | Added the coverage-evaluator contracts above (manifest keys, snapshot keys, `gt_reachable.npy` orientation, `summary.json` keys). No CSV columns changed. | Shervan |

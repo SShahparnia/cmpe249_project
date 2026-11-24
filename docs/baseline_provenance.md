@@ -1,13 +1,15 @@
 # Baseline provenance (Module 8)
 
-Status: **draft, 2026-11-23.** The repo, commit, config and code-definition parts were filled by reading the pinned source. The result columns stay empty until the 5-run reproductions in Modules 5 to 7 are done. **Do not fill them with anything but our own runs.**
+Status: **draft, 2026-11-23.** The repo, commit, config and code-definition parts were filled by reading the pinned source. The nearest and mrtsp result cells come from our own benchmark runs on 2026-11-23 ([benchmark_runs.md](benchmark_runs.md)). The ariadne cells stay empty until Module 7 is run. **Do not fill them with anything but our own runs.**
+
+"Pass?" uses a proposed rule, **team to confirm**: the published value lies within 2 sd of our 5-run mean (distance and time; our sim time vs. their wall time).
 
 Gate G1: three methods pass, or two pass and the fallback is chosen and passes its own demo.
 
 | Method | Paper | Repo | Commit | Config file | Published number | Our 5-run result (mean ± sd) | Pass? |
 |--------|-------|------|--------|-------------|------------------|------------------------------|-------|
-| `nearest` | Yamauchi 1997 (frontier-based exploration); explore_lite lineage | [robo-friends/m-explore-ros2](https://github.com/robo-friends/m-explore-ros2) | `326cf8a0b487c34246bb8f3326afbcd69576dc60` | [configs/methods/nearest.yaml](../configs/methods/nearest.yaml) | Benchmark, package config: Bookstore 50.73 m / 96 s; Warehouse 338.61 m / 587 s ([literature.md](literature.md)) | TODO | TODO |
-| `mrtsp` | Liu et al. 2025, Sci. Rep. 15:12261 | [mertgulerx/frontier_exploration_ros2](https://github.com/mertgulerx/frontier_exploration_ros2) | `11864e4ac6789dc81fd71bad51e43339c01deca2` (v1.6.2-5) | [configs/methods/mrtsp.yaml](../configs/methods/mrtsp.yaml) | Benchmark, greedy: Bookstore 36.60 m / 63 s; Warehouse 273.52 m / 499 s | TODO | TODO |
+| `nearest` | Yamauchi 1997 (frontier-based exploration); explore_lite lineage | [robo-friends/m-explore-ros2](https://github.com/robo-friends/m-explore-ros2) | `326cf8a0b487c34246bb8f3326afbcd69576dc60` | [configs/methods/nearest.yaml](../configs/methods/nearest.yaml) | Benchmark, package config: Bookstore 50.73 m / 96 s; Warehouse 338.61 m / 587 s ([literature.md](literature.md)) | Bookstore, benchmark build + config: 47.83 ± 5.82 m, 91.4 ± 12.4 s sim (5/5 complete). Our nearest config: 35.73 ± 8.66 m, 172.5 ± 73.7 s sim (4/5 complete, 1 stuck). Warehouse: not run | Bookstore: yes (within 1 sd) |
+| `mrtsp` | Liu et al. 2025, Sci. Rep. 15:12261 | [mertgulerx/frontier_exploration_ros2](https://github.com/mertgulerx/frontier_exploration_ros2) | `11864e4ac6789dc81fd71bad51e43339c01deca2` (v1.6.2-5) | [configs/methods/mrtsp.yaml](../configs/methods/mrtsp.yaml) | Benchmark, greedy: Bookstore 36.60 m / 63 s; Warehouse 273.52 m / 499 s | Bookstore, our pinned build, greedy: 33.77 ± 1.73 m, 65.9 ± 4.8 s sim (5/5 complete). Warehouse: not run | Bookstore: yes (distance 1.6 sd, time within 1 sd) |
 | `ariadne` | Cao et al. 2023, ICRA; Cao et al. 2024, RA-L | [marmotlab/ARiADNE](https://github.com/marmotlab/ARiADNE) (model, `new_version`) + [marmotlab/ARiADNE-ROS-Planner](https://github.com/marmotlab/ARiADNE-ROS-Planner) (`humble`) | `ea8bc6adb967dff29438dae3df089f4ec9b42920` / `c41b4c949946e9058598fc129fec8271f0489fba` | [configs/methods/ariadne.yaml](../configs/methods/ariadne.yaml) | Paper: TODO (full text). ROS demo: 948 m / 545 s, 0.17 s mean planning time (CMU indoor, i7-12700H) | TODO | TODO |
 | `roadmap` (fallback) | TODO | [suchetanrs/roadmap-explorer](https://github.com/suchetanrs/roadmap-explorer) | `203ff2602e1a1e41eec7ef663eacc21266e270c6` | not written (only if the fallback is triggered) | Benchmark: Bookstore 39.28 m / 72 s; Warehouse 286.28 m / 641 s | n/a | n/a |
 
@@ -44,7 +46,7 @@ Frontiers are sorted by ascending cost (`:91-93`). The first non-blacklisted one
 - After SUCCEEDED, it replans immediately (`:385-389`, `:426`).
 - It stops when no frontiers are left or all are blacklisted (`:240-267`). `return_to_init` is set to false in our config.
 
-**Benchmark (step 5).** TODO: 5 runs in `autonomous-exploration-demo-benchmark`, with both the benchmark's own config (to reproduce the published number) and ours (`gain_scale 0`).
+**Benchmark (step 5).** Done on Bookstore, 2026-11-23 ([benchmark_runs.md](benchmark_runs.md)). Benchmark build + config: 47.83 ± 5.82 m, 91.4 ± 12.4 s sim, published 50.73 m / 96 s. Our pinned build + `nearest.yaml`: 35.73 ± 8.66 m, 172.5 ± 73.7 s sim, 4/5 complete (run 1 stuck after 1,599 cycles without moving). Our pinned build with its package default config gives 47.60 ± 8.54 m, the same as the benchmarked copy. `nearest.yaml` changes `planner_frequency` and `min_frontier_size` as well as `gain_scale`. Warehouse not run yet.
 
 ---
 

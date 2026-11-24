@@ -1,6 +1,6 @@
 # Planner timing instrumentation (Module 9)
 
-Owner: Aaron. Status: **patches written 2026-11-23. Not compiled, not run, not reviewed.**
+Owner: Aaron. Status: **2026-11-23: nearest and mrtsp patches compile and publish on ROS 2 Jazzy (benchmark runs). ariadne patch not built yet. None reviewed.**
 
 Every method publishes one `exploration_msgs/PlanningCycle` per planning cycle on `/exploration/planning_cycle`. The recorder (Module 12) writes them to `cycles.csv` and `goals.csv`.
 
@@ -37,13 +37,14 @@ VERIFY: the exact `colcon` invocation once Module 3's workspace layout is settle
 6. **Cache hits.** mrtsp reuses cached frontier snapshots and MRTSP orders when nothing changed, so some cycles are near-zero latency. That is the method's real behaviour; keep those cycles.
 7. **Wall clock vs. steady clock.** `wall_*` uses `system_clock` / `time.time()` as Section 0.3 requires. An NTP or chrony step during a run would distort a latency; chrony slews by default, so this should not happen. VERIFY `chronyc tracking` in the manifest.
 
-## Step 5 sanity check (TODO, needs ROS)
+## Step 5 sanity check
 
-Run each method for 2 minutes and `ros2 topic echo /exploration/planning_cycle`:
+Checked from the `cycles.csv` files of the Bookstore benchmark runs ([benchmark_runs.md](benchmark_runs.md)), ROS 2 Jazzy, not our Humble stack:
 
-- [ ] nearest: durations positive, `n_frontiers` changes as the map grows
-- [ ] mrtsp: same
-- [ ] ariadne: same
+- [x] nearest: 2,538 cycles over 5 runs, all durations positive (min 4.9 ms), `n_frontiers` ranges from 1 to 45-60 per run with 29-36 distinct values
+- [x] mrtsp: 115 cycles over 5 runs, all positive (min 51 ms), `n_frontiers` from 1 to 13-22 per run
+- [ ] ariadne: not run yet
+- [ ] repeat on the Humble stack once Module 3 is done
 
 ## Review (step 3)
 

@@ -1,0 +1,6 @@
+# Offline analysis (Mac or Ubuntu). coverage.py itself only needs numpy + PyYAML,
+# which the ROS container / Jetson already have (python3-numpy, python3-yaml).
+numpy
+pyyaml
+matplotlib   # coverage.py --overlay, figures
+pytest       # python -m pytest analysis/tests

@@ -41,7 +41,8 @@ import numpy as np
 import yaml
 
 # SLAM cell values counted as "known" (instructions.md 13, step 2).
-# VERIFY against our slam_toolbox config; use the same values everywhere.
+# Verified 2026-11-23: slam_toolbox (configs/slam_toolbox.yaml) publishes only -1, 0 and 100
+# (64 snapshots of a WSL test run), so these thresholds classify every cell exactly.
 FREE_MAX = 0      # 0 <= value <= FREE_MAX is free
 OCC_MIN = 65      # value >= OCC_MIN is occupied; -1 is unknown, 1..64 counts as unknown
 

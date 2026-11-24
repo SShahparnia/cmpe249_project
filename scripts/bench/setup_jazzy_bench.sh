@@ -16,7 +16,7 @@ BENCH_SHA=9dbf7bd869a9da5571c1b004a652e4b7988f348b
 BENCH_DIR="$HOME/bench/autonomous-exploration-demo-benchmark"
 REPO_URL=https://github.com/SShahparnia/cmpe249_project.git
 REPO_DIR="$HOME/cmpe249_project"
-REPO_BRANCH=aaron-dev
+REPO_BRANCH=main
 
 . /etc/os-release
 if [[ "$VERSION_ID" != "24.04" ]]; then
@@ -78,5 +78,5 @@ rosdep install -r -y --ignore-src --rosdistro jazzy --from-paths \
 
 set +x
 echo
-echo "Done. Installs finished; tell Claude to continue with the build and runs."
+echo "Done. Installs finished. Next: build and run steps in docs/benchmark_runs.md (Reproduce)."
 echo "Check: ros2 --help >/dev/null && gz sim --versions   (expect 8.x = Harmonic)"

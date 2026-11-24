@@ -45,9 +45,12 @@ Also:
 - Robot-to-frontier BFS distance adds one cell per step on an 8-connected grid, so a diagonal step counts as `res`, not `res * sqrt(2)`. Diagonal paths are underestimated by up to about 29%.
 - `nearest` mode was deprecated in v1.6.0 (README version history), so our nearest baseline comes from m-explore-ros2, not from this package.
 
-## 3. Module 6 sanity checks (TODO, needs runs)
+## 3. Module 6 sanity checks
 
-- [ ] 5 runs of MRTSP (greedy) in the benchmark environment. Mean ± sd: TODO.
-- [ ] MRTSP total path shorter than nearest on the same environment and seeds: TODO (or the reason written down).
-- [ ] Results consistent with the published greedy numbers in [literature.md](literature.md): TODO.
+Runs: 2026-11-23, Bookstore, details in [benchmark_runs.md](benchmark_runs.md).
+
+- [x] 5 runs of MRTSP (greedy) in the benchmark environment: 33.77 ± 1.73 m, 65.9 ± 4.8 s sim, 5/5 complete.
+- [x] MRTSP total path shorter than nearest in the same environment and start pose: 33.77 ± 1.73 m vs. 35.73 ± 8.66 m (our nearest config) and 47.83 ± 5.82 m (benchmark m-explore config). Runs are not seed-paired; the sim is not deterministic.
+- [x] Results consistent with the published greedy numbers (36.60 m / 63 s): time within 1 sd, distance 1.6 sd shorter.
+- [ ] Warehouse runs: not done.
 - [ ] Does planning cost grow with the number of frontiers (H2)? Greedy builds a full (n+1) x (n+1) matrix and walks it, so O(n²) per cycle on a cache miss (the order cache in `build_mrtsp_frontier_sequence` skips recomputation when frontiers and the pose bucket are unchanged). Confirm empirically with the Module 9 timing topic.

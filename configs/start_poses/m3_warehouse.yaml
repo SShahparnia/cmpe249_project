@@ -1,0 +1,29 @@
+# Start poses for m3_warehouse (Module 11). Frozen after prereg-v1. Blocks use the first N:
+# pilot 0-2, Block Q 0-9 (or 0-14), Block E 0-4. Regenerate: harness/scripts/gen_start_poses.py --map m3_warehouse --n 20 --seed 249
+map: m3_warehouse
+seed: 249
+generator_commit: 1dc4a1eb2b42faa20ae57ef10a7ca7c70bca5d91-dirty
+generator: {script: harness/scripts/gen_start_poses.py, script_sha256: 94790198e42e375b980653a820b1d1e7792dbe0920b0ec372c713b4280bf8b60,
+  clearance_m: 0.35, min_sep_m: 1.5, safe_cells: 67462, draws: 28}
+frame: world (Gazebo); the SLAM map frame starts here
+poses:
+- {x: 5.9992, y: 1.5968, yaw: -2.8914}
+- {x: -3.1568, y: 7.8955, yaw: -3.0545}
+- {x: 1.1089, y: -1.5106, yaw: 0.3506}
+- {x: -1.2776, y: -4.0392, yaw: 0.029}
+- {x: -5.8278, y: 5.3691, yaw: -0.9927}
+- {x: 1.5299, y: -7.4638, yaw: 1.4798}
+- {x: -3.5458, y: 3.6681, yaw: 1.8843}
+- {x: 1.8799, y: -4.6156, yaw: -0.1367}
+- {x: 0.4063, y: 1.6205, yaw: -0.9344}
+- {x: 3.9468, y: 2.4201, yaw: -2.7202}
+- {x: -4.2147, y: -1.1824, yaw: -0.9337}
+- {x: -4.4879, y: -2.9423, yaw: -1.7334}
+- {x: 3.2588, y: -1.4767, yaw: -2.4195}
+- {x: -4.7565, y: 9.7842, yaw: -1.8675}
+- {x: -5.3246, y: 1.4426, yaw: 1.2546}
+- {x: -3.1707, y: -8.2361, yaw: 0.6053}
+- {x: -4.4477, y: -4.6726, yaw: 1.4787}
+- {x: 0.8446, y: -5.7942, yaw: 2.8548}
+- {x: 1.1317, y: 3.1868, yaw: -0.7032}
+- {x: 4.2515, y: -3.588, yaw: -0.8602}

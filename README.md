@@ -121,3 +121,10 @@ Pinned planners:
 | `methods/ARiADNE` | marmotlab/ARiADNE | new_version | `ea8bc6a` |
 | `methods/ARiADNE-ROS-Planner` | marmotlab/ARiADNE-ROS-Planner | humble (ROS 2 port) | `c41b4c9` |
 | `methods/roadmap-explorer` | suchetanrs/roadmap-explorer | main (Humble tested) | `203ff26` |
+
+Pinned worlds (Module 10; models used unchanged, world files converted to Fortress in `maps/<map>/<map>.sdf`):
+
+| Submodule | Repo | Branch | Commit |
+|-----------|------|--------|--------|
+| `maps/m1_house/aws_world` | aws-robotics/aws-robomaker-small-house-world | ros2 | `ff9631c` |
+| `maps/m3_warehouse/aws_world` | aws-robotics/aws-robomaker-small-warehouse-world | ros2 (1.0.5) | `ee0af73` |

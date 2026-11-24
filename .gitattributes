@@ -1,0 +1,2 @@
+# Patches are applied with git apply on Linux/macOS; keep LF on every checkout.
+methods/patches/*.patch text eol=lf

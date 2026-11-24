@@ -1,0 +1,138 @@
+diff --git a/explore/CMakeLists.txt b/explore/CMakeLists.txt
+index 860dca7..a406f9d 100644
+--- a/explore/CMakeLists.txt
++++ b/explore/CMakeLists.txt
+@@ -44,6 +44,7 @@ find_package(map_msgs REQUIRED)
+ find_package(visualization_msgs REQUIRED)
+ find_package(nav2_costmap_2d REQUIRED)
+ find_package(explore_lite_msgs REQUIRED)
++find_package(exploration_msgs REQUIRED)
+ 
+ set(DEPENDENCIES
+   rclcpp
+@@ -89,6 +90,7 @@ target_include_directories(explore PUBLIC
+ 
+ target_link_libraries(explore PUBLIC
+   ${explore_lite_msgs_TARGETS}
++  ${exploration_msgs_TARGETS}
+   ${geometry_msgs_TARGETS}
+   ${map_msgs_TARGETS}
+   ${nav2_msgs_TARGETS}
+diff --git a/explore/include/explore/explore.h b/explore/include/explore/explore.h
+index 8799783..bba24e8 100644
+--- a/explore/include/explore/explore.h
++++ b/explore/include/explore/explore.h
+@@ -46,6 +46,7 @@
+ #include <chrono>
+ #include <cmath>
+ #include <explore_lite_msgs/msg/explore_status.hpp>
++#include <exploration_msgs/msg/planning_cycle.hpp>
+ #include <geometry_msgs/msg/point.hpp>
+ #include <rclcpp/rclcpp.hpp>
+ #include <std_msgs/msg/bool.hpp>
+@@ -113,6 +114,15 @@ private:
+     */
+   rclcpp::Publisher<explore_lite_msgs::msg::ExploreStatus>::SharedPtr status_pub_;
+ 
++  // ExploreBench timing (Module 9): timing only, no planning logic.
++  rclcpp::Publisher<exploration_msgs::msg::PlanningCycle>::SharedPtr
++      planning_cycle_pub_;
++  uint64_t planning_cycle_id_ = 0;
++  void publishPlanningCycle(const rclcpp::Time& ros_start, double wall_start,
++                            const rclcpp::Time& ros_end, double wall_end,
++                            size_t n_frontiers,
++                            const geometry_msgs::msg::Point& goal);
++
+   rclcpp::Logger logger_;
+   tf2_ros::Buffer tf_buffer_;
+   tf2_ros::TransformListener tf_listener_;
+diff --git a/explore/package.xml b/explore/package.xml
+index 210812c..6ede4c2 100644
+--- a/explore/package.xml
++++ b/explore/package.xml
+@@ -15,6 +15,7 @@
+   <test_depend>ament_lint_auto</test_depend>
+   <test_depend>ament_lint_common</test_depend>
+   <depend>explore_lite_msgs</depend>
++  <depend>exploration_msgs</depend>
+   <depend>geometry_msgs</depend>
+   <depend>map_msgs</depend>
+   <depend>nav2_costmap_2d</depend>
+diff --git a/explore/src/explore.cpp b/explore/src/explore.cpp
+index d72fb18..65f308d 100644
+--- a/explore/src/explore.cpp
++++ b/explore/src/explore.cpp
+@@ -49,6 +49,14 @@ inline static bool same_point(const geometry_msgs::msg::Point& one,
+   return dist < 0.01;
+ }
+ 
++// ExploreBench timing (Module 9): Unix wall-clock seconds, same base as time.time().
++inline static double wall_now_seconds()
++{
++  return std::chrono::duration<double>(
++             std::chrono::system_clock::now().time_since_epoch())
++      .count();
++}
++
+ namespace explore
+ {
+ Explore::Explore()
+@@ -103,6 +111,11 @@ Explore::Explore()
+   status_qos.transient_local();
+   status_pub_ = this->create_publisher<explore_lite_msgs::msg::ExploreStatus>("explore/status", status_qos);
+ 
++  // ExploreBench timing (Module 9)
++  planning_cycle_pub_ =
++      this->create_publisher<exploration_msgs::msg::PlanningCycle>(
++          "/exploration/planning_cycle", rclcpp::QoS(100).reliable());
++
+   // Subscription to resume or stop exploration
+   resume_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+       "explore/resume", 10,
+@@ -230,6 +243,9 @@ void Explore::makePlan()
+ {
+   // find frontiers
+   auto pose = costmap_client_.getRobotPose();
++  // ExploreBench timing (Module 9): cycle starts right before frontier extraction
++  const rclcpp::Time cycle_ros_start = this->now();
++  const double cycle_wall_start = wall_now_seconds();
+   // get frontiers sorted according to cost
+   auto frontiers = search_.searchFrom(pose.position);
+   RCLCPP_DEBUG(logger_, "found %lu frontiers", frontiers.size());
+@@ -292,6 +308,12 @@ void Explore::makePlan()
+     resuming_ = false;
+   }
+ 
++  // ExploreBench timing (Module 9): goal chosen; cycle ends before anything is sent
++  const double cycle_wall_end = wall_now_seconds();
++  const rclcpp::Time cycle_ros_end = this->now();
++  publishPlanningCycle(cycle_ros_start, cycle_wall_start, cycle_ros_end,
++                       cycle_wall_end, frontiers.size(), target_position);
++
+   // we don't need to do anything if we still pursuing the same goal
+   if (same_goal && goal_active_) {
+     return;
+@@ -330,6 +352,23 @@ void Explore::makePlan()
+   move_base_client_->async_send_goal(goal, send_goal_options);
+ }
+ 
++void Explore::publishPlanningCycle(const rclcpp::Time& ros_start,
++                                   double wall_start,
++                                   const rclcpp::Time& ros_end,
++                                   double wall_end, size_t n_frontiers,
++                                   const geometry_msgs::msg::Point& goal)
++{
++  exploration_msgs::msg::PlanningCycle msg;
++  msg.cycle_id = planning_cycle_id_++;
++  msg.stamp_start = ros_start;
++  msg.stamp_end = ros_end;
++  msg.wall_start = wall_start;
++  msg.wall_end = wall_end;
++  msg.n_frontiers = static_cast<uint32_t>(n_frontiers);
++  msg.goal = goal;
++  planning_cycle_pub_->publish(msg);
++}
++
+ void Explore::returnToInitialPose()
+ {
+   RCLCPP_INFO(logger_, "Returning to initial pose.");

@@ -47,7 +47,7 @@ def git_commit() -> str:
         sha = subprocess.check_output(["git", "-C", REPO, "rev-parse", "HEAD"], text=True).strip()
         tracked = subprocess.call(["git", "-C", REPO, "ls-files", "--error-unmatch", me],
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-        changed = subprocess.call(["git", "-C", REPO, "diff", "--quiet", "HEAD", "--", me]) != 0
+        changed = subprocess.call(["git", "--no-optional-locks", "-C", REPO, "diff", "--quiet", "HEAD", "--", me]) != 0
         return sha + ("-dirty" if (not tracked or changed) else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"

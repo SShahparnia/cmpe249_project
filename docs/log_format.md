@@ -84,11 +84,28 @@ Never mark a run `invalid` just because the method did badly. That would bias th
 | `t_ros_start` | float, optional | ROS time when the planner started. Time and distance zero for `t_95`, `d_95`. If missing, the first pose / snapshot is used. |
 | `outcome` | string | one of 0.5 |
 
+Further manifest keys written by `harness/run.py` (Module 16), read by the analysis (Modules 14, 20):
+
+| Key | Type | Meaning |
+|-----|------|---------|
+| `run_id`, `block`, `method`, `power_mode` | string | Section 0.1 (`block` is `idle` for idle baselines) |
+| `t_wall_start`, `t_wall_end` | float | wall time of the planner start / of the end of monitoring: the energy window |
+| `t_ros_end`, `sim_duration_s`, `wall_duration_s`, `rtf` | float | end of the run in sim time, durations, measured real-time factor |
+| `reason`, `notes` | string, list | why the run ended; bring-up notes (Nav2 ready time, dock removal, safety override) |
+| `planner_process` | string | the planner's name in `procs.csv` (for planner CPU time) |
+| `git` | map | repo commit, dirty flag, commit of every submodule |
+| `config_sha256` | map | sha256 of every config used, including the run's effective params file `params/<method>.yaml` |
+| `common` | map | a copy of `configs/common.yaml` as used |
+| `machine`, `chrony_offset_s`, `sensor_setup_detected` | map, float, map | host, ROS env, clock offset, the TB4 sensor rates actually installed |
+| `n_planning_cycles`, `coverage_live_last`, `leftovers_killed` | int, float, list | monitor counters; processes killed after shutdown |
+
+Each run folder also holds `params/<method>.yaml`, the method's parameter file with the common overrides applied (replanning rate, smallest frontier, `use_sim_time`), which is what the planner was started with.
+
 **Map snapshots** `maps/map_<seq>.npz` (recorder, Module 12): `data` (int8, `width*height`, row-major, row 0 = grid origin, as in `nav_msgs/OccupancyGrid`), `resolution`, `origin_x`, `origin_y`, `origin_yaw`, `width`, `height`, `t_ros`, `t_wall`.
 
 **Ground truth** `maps/<map>/` (Module 10): `gt.pgm` + `gt.yaml` in map_server format (image row 0 = top), and `gt_reachable.npy`, a bool array with the **same shape and row order as `gt.pgm`** (row 0 = top). The evaluator adds the obstacle cells that border reachable free space itself, so `gt_reachable.npy` only needs the reachable free cells.
 
-**Known cells:** SLAM value `0` = free, `>= 65` = occupied, `-1` and `1..64` = unknown (`FREE_MAX` / `OCC_MIN` in `coverage.py`, overridable with `--free-max` / `--occ-min`). **VERIFY** against our `slam_toolbox` config.
+**Known cells:** SLAM value `0` = free, `>= 65` = occupied, `-1` and `1..64` = unknown (`FREE_MAX` / `OCC_MIN` in `coverage.py`, overridable with `--free-max` / `--occ-min`). Verified 2026-11-23: slam_toolbox with `configs/slam_toolbox.yaml` publishes only -1, 0 and 100, so the thresholds are exact.
 
 **`summary.json` keys written:** `t_95`, `d_95` (seconds / metres from `t_ros_start`, `null` if 95% is never reached), `final_coverage`, `total_distance_m`, `total_time_s`, `outcome`, `oscillation_count`, `oscillation_threshold_m`, `coverage_target`, `n_reference_cells`, `n_snapshots`, `t_ros_zero`, `known_thresholds`, `coverage_warnings`. Other keys already in the file are kept.
 
@@ -100,5 +117,6 @@ Never mark a run `invalid` just because the method did badly. That would bias th
 
 | date | change | who |
 |------|--------|-----|
+| 2026-11-23 | Orchestrator manifest keys and `params/` documented above (Module 16). No CSV columns changed. | Joey |
 | 2026-11-23 | Snapshots also store `map_stamp` (header stamp of the `/map` message, extra key; `t_ros` is the snapshot time). | Shervan |
 | 2026-11-23 | Added the coverage-evaluator contracts above (manifest keys, snapshot keys, `gt_reachable.npy` orientation, `summary.json` keys). No CSV columns changed. | Shervan |

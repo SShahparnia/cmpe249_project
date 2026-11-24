@@ -1,0 +1,37 @@
+# Common experiment configuration (Module 15). Read by the orchestrator (harness/run.py),
+# which passes these values to every method, so all methods run under the same rules.
+# Rules and per-method table: docs/common_rules.md. Frozen after prereg-v1.
+#
+# Values marked PILOT are placeholders until the pilot (Module 17) sets them; the pilot
+# report records the final number and this file is updated before prereg-v1.
+
+replan_period_s: 1.0              # PILOT. Deadline for one planning cycle; every method's replanning
+                                  # rate is set to 1 / replan_period_s (table in docs/common_rules.md)
+goal_commitment: method_default   # keep each method's own commitment logic, documented, never overridden
+timeout_sim_s: 1200               # PILOT. Per run, sim time (about 2x the slowest completed pilot run)
+coverage_target: 0.95             # analysis/coverage.py COVERAGE_TARGET
+map_snapshot_period_s: 5.0        # recorder --snapshot-period (sim time)
+slam_params: configs/slam_toolbox.yaml
+nav2_params: configs/nav2.yaml
+min_frontier_size_m: 0.3          # smallest frontier a method may consider, where it has the parameter
+oscillation_threshold_m: 1.0      # PILOT. Goal-switch distance X of the oscillation metric (Module 13)
+
+# Termination (orchestrator monitor, Module 16; outcomes in docs/log_format.md 0.5)
+stuck_no_cycle_sim_s: 60          # no new planning cycle for this long while coverage < target -> stuck
+clock_stall_wall_s: 10            # /clock not advancing for this long (wall) -> invalid
+complete_grace_s: 5               # keep recording this long (sim) after coverage_live >= target
+nav2_ready_timeout_s: 60          # wall seconds for Nav2 to become active, else invalid (longer on slow
+                                  # machines: the orchestrator scales it by 1 / measured RTF, see run.py)
+max_pose_jump_m: 1.0              # map -> base_link jump between two 10 Hz samples that counts as impossible
+
+# Robot and sensors: the same for every method and every machine.
+robot: turtlebot4_standard
+robot_safety_override: backup_only  # Create 3 motion_control. Default `none` caps driving backwards, which
+                                  # blocks Nav2's backup recovery. backup_only lifts that cap and the cliff
+                                  # check while reversing (our worlds have no drop-offs); the other reflexes
+                                  # stay on. Set by harness/run.py, which also removes the charging dock the
+                                  # TB4 sim spawns in front of the robot (docs/common_rules.md rule 5).
+sensor_setup:                     # TEAM DECISION (docs/sim_setup.md): fill before prereg-v1 and apply on
+  camera: removed                 # every sim machine with scripts/sim/tune_sensor_rates.sh
+  lidar_hz: 62                    # stock
+  hazard_hz: 62                   # stock (cliff + IR intensity)

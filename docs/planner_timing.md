@@ -42,7 +42,7 @@ VERIFY: the exact `colcon` invocation once Module 3's workspace layout is settle
 Checked from the `cycles.csv` files of the Bookstore benchmark runs ([benchmark_runs.md](benchmark_runs.md)), ROS 2 Jazzy, not our Humble stack:
 
 - [x] nearest: 2,538 cycles over 5 runs, all durations positive (min 4.9 ms), `n_frontiers` ranges from 1 to 45-60 per run with 29-36 distinct values
-- [x] mrtsp: 115 cycles over 5 runs, all positive (min 51 ms), `n_frontiers` from 1 to 13-22 per run
+- [x] mrtsp: 115 cycles over 5 runs, all positive (min 51 ms), `n_frontiers` from 1 to 13-22 per run. These runs used the patch **before** preemption timing was added (c93a701), so preemption cycles are not in them; rerun to check the new path.
 - [ ] ariadne: not run yet
 - [ ] repeat on the Humble stack once Module 3 is done
 

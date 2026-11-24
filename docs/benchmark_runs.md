@@ -47,7 +47,7 @@ Per-run values are in the CSV. One extra C run was `invalid` (Nav2 / `/map` not 
 - **MRTSP is shorter than nearest (Module 6 sanity check), and far more consistent.** 33.77 ± 1.73 m vs 35.73 ± 8.66 m (or 38.38 ± 7.28 m over the 4 complete nearest runs), and 66 vs 173 s sim. With 5 unpaired runs this is a sanity check, not a test.
 - **Nearest run 1 got stuck.** No motion for 180 s at 167 m² known (about 94% of the final area), with 1,599 planning cycles: replanning without moving. It counts as a method failure, not a rerun (Section 0.5).
 - **Set B is not a one-parameter change from set A.** `nearest.yaml` also changes `planner_frequency` (0.15 → 1.0) and `min_frontier_size` (0.75 → 0.3), on top of `gain_scale` (1 → 0). Keep that in mind before attributing the A vs B difference to the cost function.
-- **Planning latency (laptop, not Jetson):** MRTSP cycles take about twice as long as nearest's (112 vs 61 ms median). Not a Block E result.
+- **Planning latency (laptop, not Jetson):** MRTSP cycles take about twice as long as nearest's (112 vs 61 ms median). Not a Block E result. The MRTSP runs used the timing patch as of `cc44632`, which times only `try_send_next_goal`; preemption replanning was added to the patch afterwards (`c93a701`), so MRTSP cycle counts and latencies here leave out preemption cycles. Distances and times are unaffected (the patch adds timing only).
 
 ## Reproduce
 

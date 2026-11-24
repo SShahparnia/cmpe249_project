@@ -7,9 +7,27 @@ software on machines without a GPU (the Mac container), which costs several core
     ros2 launch harness/launch/tb4_sim.launch.py gui:=false slam:=true nav2:=true rviz:=true
 
 slam, nav2, localization, rviz, x, y, z, yaw pass through to turtlebot4_spawn.launch.py.
+
+`world` is a world name. Besides the TB4 worlds (warehouse, depot, maze) it finds the repo's
+maps (Module 10): world:=m2_office loads maps/m2_office/m2_office.sdf. Every maps/<map>/
+folder, every maps/<map>/*/models folder and its parent (the AWS submodules resolve
+file://models/... from there) are on the Gazebo resource path.
 """
 import os
 from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+
+
+def repo_resource_dirs():
+    maps = REPO / 'maps'
+    if not maps.is_dir():
+        return []
+    dirs = sorted(str(d) for d in maps.iterdir() if d.is_dir() and d.name != 'tools')
+    for m in sorted(maps.glob('*/*/models')):
+        if m.is_dir():
+            dirs += [str(m), str(m.parent)]
+    return dirs
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -35,6 +53,7 @@ def generate_launch_description():
     tb4_ign = share('turtlebot4_ignition_bringup')
 
     resource_path = SetEnvironmentVariable('IGN_GAZEBO_RESOURCE_PATH', [
+        ''.join(d + ':' for d in repo_resource_dirs()),
         os.path.join(tb4_ign, 'worlds'), ':',
         os.path.join(share('irobot_create_ignition_bringup'), 'worlds'), ':',
         str(Path(share('turtlebot4_description')).parent.resolve()), ':',

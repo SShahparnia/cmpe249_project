@@ -3,17 +3,20 @@
 
     python3 maps/tools/world_to_gt.py maps/<map>            # reads maps/<map>/gt_config.yaml
 
-Option A of step 3: rasterize the world's collision geometry at lidar height into a
-2D grid, at the slam_toolbox resolution. Writes into maps/<map>/:
+Option A of step 3: rasterize the world geometry at lidar height into a 2D grid, at the
+slam_toolbox resolution. Writes into maps/<map>/:
 
     gt.pgm, gt.yaml       map_server format (image row 0 = top), every cell free or occupied
     gt_reachable.npy      bool, same shape and row order as gt.pgm: reachable free cells
     gt_info.yaml          cell counts, parameters, and hashes of the world and of this tool
     gt.png                figure: occupied / reachable / unreachable free
 
-Occupancy is the cross-section at `lidar_height` (what the lidar can see). Reachability
-(step 4) uses a stricter "blocking" grid: the union of cross-sections at `body_heights`
-(anything the robot body would hit). Blocking cells are grown by `seal_radius`, the free
+Occupancy is the cross-section of the VISUAL geometry at `lidar_height`: the TB4 lidar is
+a Gazebo gpu_lidar, which renders visuals, so that is what SLAM can map (set
+`lidar_geometry: collision` to use collision shapes instead). Reachability (step 4) uses a
+stricter "blocking" grid: the union of the COLLISION cross-sections at `body_heights`
+(anything the robot body would hit) and the lidar-height occupancy (anything Nav2 would
+see as an obstacle). Blocking cells are grown by `seal_radius`, the free
 component containing `seed` is flood-filled (4-connected), grown back by the same radius,
 and intersected with the lidar-height free cells. Growing and shrinking by the same radius
 closes gaps narrower than 2 * seal_radius (mesh seams, gaps behind furniture) without
@@ -31,6 +34,7 @@ gt_config.yaml (all paths relative to the map folder):
     seed: [0.0, 0.0]                # world x, y inside the explorable space
     margin: 1.0                     # m of free border around the geometry
     exclude: []                     # regexes on model instance names to ignore
+    lidar_geometry: visual          # visual (what gpu_lidar sees) or collision
 
 Geometry supported: box, cylinder, sphere, mesh (any format trimesh reads; COLLADA
 <unit meter> is applied, as Gazebo does), nested <model> and <include model://...>.
@@ -66,6 +70,7 @@ DEFAULTS = {
     "seed": None,
     "margin": 1.0,
     "exclude": [],
+    "lidar_geometry": "visual",
 }
 FREE_PX, OCC_PX = 254, 0
 
@@ -98,6 +103,7 @@ class Shape:
     kind: str               # box, cylinder, sphere, mesh
     params: dict
     T: np.ndarray           # 4x4 world <- geometry
+    role: str = "collision" # collision or visual
 
 
 @dataclass
@@ -108,7 +114,9 @@ class World:
 
 
 def resolve_model_uri(uri: str, model_paths, base_dir: str) -> str | None:
-    """model://name[/sub/path] or a relative / file:// path -> absolute path, or None."""
+    """model://name[/sub/path], or a relative / file:// path -> absolute path, or None.
+    Relative paths are tried against the referring file's folder, then every resource
+    path, like Gazebo does (the AWS warehouse models use file://models/<model>/...)."""
     uri = uri.strip()
     if uri.startswith("model://"):
         rest = uri[len("model://"):]
@@ -119,8 +127,13 @@ def resolve_model_uri(uri: str, model_paths, base_dir: str) -> str | None:
         return None
     if uri.startswith("file://"):
         uri = uri[len("file://"):]
-    cand = uri if os.path.isabs(uri) else os.path.join(base_dir, uri)
-    return cand if os.path.exists(cand) else None
+    if os.path.isabs(uri):
+        return uri if os.path.exists(uri) else None
+    for d in [base_dir] + list(model_paths):
+        cand = os.path.join(d, *uri.split("/"))
+        if os.path.exists(cand):
+            return cand
+    return None
 
 
 def _model_sdf_file(model_dir: str) -> str:
@@ -143,13 +156,14 @@ def _walk_model(model_el, T_parent, prefix, model_dir, world: World, model_paths
     T_model = T_parent @ (pose_override if pose_override is not None else _child_pose(model_el))
     for link in model_el.findall("link"):
         T_link = T_model @ _child_pose(link)
-        for col in link.findall("collision"):
-            geom = col.find("geometry")
-            if geom is None:
-                continue
-            T_col = T_link @ _child_pose(col)
-            _add_geometry(geom, T_col, f"{path}/{link.get('name', 'link')}/{col.get('name', 'collision')}",
-                          model_dir, world, model_paths)
+        for role in ("collision", "visual"):
+            for el in link.findall(role):
+                geom = el.find("geometry")
+                if geom is None:
+                    continue
+                _add_geometry(geom, T_link @ _child_pose(el),
+                              f"{path}/{link.get('name', 'link')}/{el.get('name', role)}",
+                              model_dir, world, model_paths, role)
     for sub in model_el.findall("model"):
         _walk_model(sub, T_model, path, model_dir, world, model_paths, exclude)
     for inc in model_el.findall("include"):
@@ -184,19 +198,19 @@ def _renamed(el, name):
     return el
 
 
-def _add_geometry(geom, T, name, model_dir, world: World, model_paths):
+def _add_geometry(geom, T, name, model_dir, world: World, model_paths, role="collision"):
     for kind in ("box", "cylinder", "sphere", "mesh", "plane", "capsule", "ellipsoid", "heightmap", "polyline"):
         g = geom.find(kind)
         if g is None:
             continue
         if kind == "box":
             size = [float(v) for v in g.findtext("size", "1 1 1").split()]
-            world.shapes.append(Shape(name, "box", {"size": size}, T))
+            world.shapes.append(Shape(name, "box", {"size": size}, T, role))
         elif kind == "cylinder":
             world.shapes.append(Shape(name, "cylinder", {"radius": float(g.findtext("radius", "1")),
-                                                         "length": float(g.findtext("length", "1"))}, T))
+                                                         "length": float(g.findtext("length", "1"))}, T, role))
         elif kind == "sphere":
-            world.shapes.append(Shape(name, "sphere", {"radius": float(g.findtext("radius", "1"))}, T))
+            world.shapes.append(Shape(name, "sphere", {"radius": float(g.findtext("radius", "1"))}, T, role))
         elif kind == "mesh":
             uri = g.findtext("uri", "").strip()
             f = resolve_model_uri(uri, model_paths, model_dir)
@@ -204,7 +218,7 @@ def _add_geometry(geom, T, name, model_dir, world: World, model_paths):
                 world.warnings.append(f"{name}: cannot resolve mesh {uri!r}")
                 return
             scale = [float(v) for v in g.findtext("scale", "1 1 1").split()]
-            world.shapes.append(Shape(name, "mesh", {"file": f, "scale": scale}, T))
+            world.shapes.append(Shape(name, "mesh", {"file": f, "scale": scale}, T, role))
         elif kind == "plane":
             pass   # ground plane: never an obstacle at lidar height
         else:
@@ -410,15 +424,19 @@ def build(map_dir: str, cfg: dict) -> dict:
     world_file = os.path.join(map_dir, cfg["world"])
     model_paths = [os.path.normpath(os.path.join(map_dir, p)) for p in cfg["model_paths"]]
     world = load_world(world_file, model_paths, cfg["exclude"])
-    meshes = [shape_mesh(s) for s in world.shapes]
-    heights = sorted(set([cfg["lidar_height"]] + list(cfg["body_heights"])))
+    if cfg["lidar_geometry"] not in ("visual", "collision"):
+        raise ValueError("lidar_geometry must be visual or collision")
+    col = [shape_mesh(s) for s in world.shapes if s.role == "collision"]
+    vis = [shape_mesh(s) for s in world.shapes if s.role == "visual"]
+    lidar_meshes = vis if cfg["lidar_geometry"] == "visual" else col
 
     # Grid bounds: everything any slice touches, plus the margin.
     lo, hi = np.array([np.inf, np.inf]), -np.array([np.inf, np.inf])
-    for m in meshes:
-        zlo, zhi = m.bounds[:, 2]
-        if any(zlo < z < zhi for z in heights):
-            lo, hi = np.minimum(lo, m.bounds[0, :2]), np.maximum(hi, m.bounds[1, :2])
+    for meshes, heights in ((lidar_meshes, [cfg["lidar_height"]]), (col, cfg["body_heights"])):
+        for m in meshes:
+            zlo, zhi = m.bounds[:, 2]
+            if any(zlo < z < zhi for z in heights):
+                lo, hi = np.minimum(lo, m.bounds[0, :2]), np.maximum(hi, m.bounds[1, :2])
     if not np.all(np.isfinite(lo)):
         raise ValueError("no geometry crosses the slice heights")
     res, margin = float(cfg["resolution"]), float(cfg["margin"])
@@ -426,11 +444,10 @@ def build(map_dir: str, cfg: dict) -> dict:
     y0 = math.floor((lo[1] - margin) / res) * res
     g = Grid(x0, y0, res, int(math.ceil((hi[1] + margin - y0) / res)), int(math.ceil((hi[0] + margin - x0) / res)))
 
-    occ = rasterize_slice(meshes, cfg["lidar_height"], g)
+    occ = rasterize_slice(lidar_meshes, cfg["lidar_height"], g)
     blocking = occ.copy()
     for z in cfg["body_heights"]:
-        if z != cfg["lidar_height"]:
-            blocking |= rasterize_slice(meshes, z, g)
+        blocking |= rasterize_slice(col, z, g)
     free = ~occ
     seal = int(round(float(cfg["seal_radius"]) / res))
     seed_rc = tuple(int(v) for v in g.cell(*cfg["seed"]))
@@ -459,7 +476,7 @@ def write(map_dir: str, cfg: dict, out: dict) -> dict:
         "world_sha256": sha256(out["world_file"]),
         "tool_sha256": sha256(os.path.abspath(__file__)),
         "params": {k: cfg[k] for k in ("resolution", "lidar_height", "body_heights", "seal_radius",
-                                       "seed", "margin", "exclude")},
+                                       "seed", "margin", "exclude", "lidar_geometry")},
         "grid": {"rows": g.rows, "cols": g.cols, "origin": meta["origin"],
                  "size_m": [round(g.cols * g.res, 2), round(g.rows * g.res, 2)]},
         "cells": {
@@ -471,7 +488,7 @@ def write(map_dir: str, cfg: dict, out: dict) -> dict:
         },
         "areas_m2": {"reachable_free": round(float(reach.sum()) * g.res ** 2, 2),
                      "reference": round(float(ref.sum()) * g.res ** 2, 2)},
-        "n_collision_shapes": len(out["world"].shapes),
+        "n_shapes": {r: sum(1 for s in out["world"].shapes if s.role == r) for r in ("collision", "visual")},
         "warnings": out["world"].warnings,
     }
     with open(os.path.join(map_dir, "gt_info.yaml"), "w") as f:

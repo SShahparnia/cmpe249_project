@@ -24,7 +24,8 @@ RES = 0.05
 def box_model(name, x, y, sx, sy, sz, yaw=0.0):
     return f"""
     <model name="{name}"><static>true</static><pose>{x} {y} {sz / 2} 0 0 {yaw}</pose>
-      <link name="link"><collision name="c"><geometry><box><size>{sx} {sy} {sz}</size></box></geometry></collision></link>
+      <link name="link"><collision name="c"><geometry><box><size>{sx} {sy} {sz}</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>{sx} {sy} {sz}</size></box></geometry></visual></link>
     </model>"""
 
 
@@ -52,7 +53,9 @@ def make_world(tmp, extra="", outer_door=None):
     with open(os.path.join(mdir, "model.sdf"), "w") as f:
         f.write("""<sdf version="1.6"><model name="crate"><pose>0 0 0.2 0 0 0</pose><link name="l">
           <collision name="c"><geometry><mesh><uri>model://crate/meshes/crate.obj</uri>
-          <scale>2 2 1</scale></mesh></geometry></collision></link></model></sdf>""")
+          <scale>2 2 1</scale></mesh></geometry></collision>
+          <visual name="v"><geometry><mesh><uri>model://crate/meshes/crate.obj</uri>
+          <scale>2 2 1</scale></mesh></geometry></visual></link></model></sdf>""")
     world = f"""<?xml version="1.0"?>
     <sdf version="1.6"><world name="t">
       <model name="ground"><static>true</static><link name="l"><collision name="c"><geometry>
@@ -139,6 +142,24 @@ class TestWorldToGt(unittest.TestCase):
         self.assertTrue(any(wall_ref))
         r, c = out["grid"].cell(0.0, -2.2)
         self.assertFalse(ref[r, c])
+
+    def test_lidar_uses_visuals_robot_uses_collisions(self):
+        # A shelf: solid 1 x 1 m collision block, but the visual is four 0.1 m posts.
+        posts = "".join(
+            f'<visual name="p{i}"><pose>{dx} {dy} 0.5 0 0 0</pose><geometry><box><size>0.1 0.1 1.0</size>'
+            f'</box></geometry></visual>' for i, (dx, dy) in enumerate([(-.45, -.45), (.45, -.45), (-.45, .45), (.45, .45)]))
+        shelf = (f'<model name="shelf"><static>true</static><pose>1.5 -1.0 0 0 0 0</pose><link name="l">'
+                 f'<collision name="c"><pose>0 0 0.5 0 0 0</pose><geometry><box><size>1 1 1</size></box></geometry>'
+                 f'</collision>{posts}</link></model>')
+        cfg = make_world(self.tmp, extra=shelf)
+        out = w2g.build(self.tmp, cfg)
+        self.assertTrue(self.at(out, 1.05, -1.45, "occ"))        # a post: the lidar sees it
+        self.assertFalse(self.at(out, 1.5, -1.0, "occ"))         # between posts: the lidar sees through
+        self.assertTrue(self.at(out, 1.5, -1.0, "blocking"))     # but the robot cannot drive in
+        self.assertFalse(self.at(out, 1.5, -1.0, "reach"))
+        cfg["lidar_geometry"] = "collision"
+        out = w2g.build(self.tmp, cfg)
+        self.assertTrue(self.at(out, 1.5, -1.0, "occ"))
 
     def test_open_world_is_rejected(self):
         cfg = make_world(self.tmp, outer_door=1.0)
